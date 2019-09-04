@@ -8,6 +8,46 @@ import pandas as pd
 
 import util
 
+
+def new_zhubi_df(df_row):
+    return pd.DataFrame({"exchange_time": [getattr(df_row, "exchange_time")],
+                         "contract": [getattr(df_row, "contract")],
+                         "price": [getattr(df_row, "price")],
+                         "bs": [getattr(df_row, "bs")],
+                         "amount": [getattr(df_row, "amount")],
+                         "exchange_timestamp": [getattr(df_row,
+                                                        "exchange_timestamp")],
+                         "time": [getattr(df_row, "time")],
+                         "timestamp": [getattr(df_row, "timestamp")],
+                         "last": "",
+                         "volume": "",
+                         "ask_0_p": "",
+                         "ask_0_v": "",
+                         "bid_0_p": "",
+                         "bid_0_v": "",
+                         "IsDataNormal": "0"
+                         })
+
+
+def new_tick_df(df_row):
+    return pd.DataFrame({"exchange_time": "",
+                  "contract": "",
+                  "price": "",
+                  "bs": "",
+                  "amount": "",
+                  "exchange_timestamp": "",
+                  "time": [getattr(df_row, "time")],
+                  "timestamp": getattr(df_row, "timestamp"),
+                  "last": getattr(df_row, "last"),
+                  "volume": getattr(df_row, "volume"),
+                  "ask_0_p": getattr(df_row, "ask_0_p"),
+                  "ask_0_v": getattr(df_row, "ask_0_v"),
+                  "bid_0_p": getattr(df_row, "bid_0_p"),
+                  "bid_0_v": getattr(df_row, "bid_0_v"),
+                  "IsDataNormal": "0"
+                  })
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(f"Usage python mergetickzhubi.py $tick.csv $zhubi.csv $outputFile")
@@ -56,41 +96,9 @@ if __name__ == "__main__":
                         # 插入逐笔数据
                         for j in range(prev_zhubi_index, i):
                             j_data = df_zhubi.loc[j]
-                            df_total = pd.concat([df_total,
-                                                  pd.DataFrame({"exchange_time": [getattr(j_data, "exchange_time")],
-                                                                "contract": [getattr(j_data, "contract")],
-                                                                "price": [getattr(j_data, "price")],
-                                                                "bs": [getattr(j_data, "bs")],
-                                                                "amount": [getattr(j_data, "amount")],
-                                                                "exchange_timestamp": [getattr(j_data,
-                                                                                               "exchange_timestamp")],
-                                                                "time": [getattr(j_data, "time")],
-                                                                "timestamp": [getattr(j_data, "timestamp")],
-                                                                "last": "",
-                                                                "volume": "",
-                                                                "ask_0_p": "",
-                                                                "ask_0_v": "",
-                                                                "bid_0_p": "",
-                                                                "bid_0_v": "",
-                                                                "IsDataNormal": "0"
-                                                                })])
+                            df_total = pd.concat([df_total, new_zhubi_df(j_data)])
                         # 插入tick数据
-                        df_total = pd.concat([df_total, pd.DataFrame({"exchange_time": "",
-                                                                      "contract": "",
-                                                                      "price": "",
-                                                                      "bs": "",
-                                                                      "amount": "",
-                                                                      "exchange_timestamp": "",
-                                                                      "time": [getattr(tick_row, "time")],
-                                                                      "timestamp": getattr(tick_row, "timestamp"),
-                                                                      "last": getattr(tick_row, "last"),
-                                                                      "volume": getattr(tick_row, "volume"),
-                                                                      "ask_0_p": getattr(tick_row, "ask_0_p"),
-                                                                      "ask_0_v": getattr(tick_row, "ask_0_v"),
-                                                                      "bid_0_p": getattr(tick_row, "bid_0_p"),
-                                                                      "bid_0_v": getattr(tick_row, "bid_0_v"),
-                                                                      "IsDataNormal": "0"
-                                                                      })])
+                        df_total = pd.concat([df_total, new_tick_df(tick_row)])
                     df_zhubi_start_index = zhubi_row[0]
                     break
                 zhubi_total_volume = zhubi_total_volume + float(getattr(zhubi_row, "amount"))
