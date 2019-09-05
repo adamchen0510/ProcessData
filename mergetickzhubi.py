@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
+import datetime
 import math
 import sys
-import gzip
-import os
 import pandas as pd
 
-import util
+import logfile
 
 
 def new_zhubi_df(df_row):
@@ -31,27 +30,30 @@ def new_zhubi_df(df_row):
 
 def new_tick_df(df_row):
     return pd.DataFrame({"exchange_time": "",
-                  "contract": "",
-                  "price": "",
-                  "bs": "",
-                  "amount": "",
-                  "exchange_timestamp": "",
-                  "time": [getattr(df_row, "time")],
-                  "timestamp": getattr(df_row, "timestamp"),
-                  "last": getattr(df_row, "last"),
-                  "volume": getattr(df_row, "volume"),
-                  "ask_0_p": getattr(df_row, "ask_0_p"),
-                  "ask_0_v": getattr(df_row, "ask_0_v"),
-                  "bid_0_p": getattr(df_row, "bid_0_p"),
-                  "bid_0_v": getattr(df_row, "bid_0_v"),
-                  "IsDataNormal": "0"
-                  })
-
+                         "contract": "",
+                         "price": "",
+                         "bs": "",
+                         "amount": "",
+                         "exchange_timestamp": "",
+                         "time": [getattr(df_row, "time")],
+                         "timestamp": getattr(df_row, "timestamp"),
+                         "last": getattr(df_row, "last"),
+                         "volume": getattr(df_row, "volume"),
+                         "ask_0_p": getattr(df_row, "ask_0_p"),
+                         "ask_0_v": getattr(df_row, "ask_0_v"),
+                         "bid_0_p": getattr(df_row, "bid_0_p"),
+                         "bid_0_v": getattr(df_row, "bid_0_v"),
+                         "IsDataNormal": "0"
+                         })
+def print_time(message):
+    time_now = datetime.datetime.now().strftime('%Y.%m.%d-%H:%M:%S.%f')
+    print(f"time: {time_now}, {message}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(f"Usage python mergetickzhubi.py $tick.csv $zhubi.csv $outputFile")
         exit(0)
+    logfile.init('log')
     tick_csv = sys.argv[1]
     zhubi_csv = sys.argv[2]
     output = sys.argv[3]
@@ -70,13 +72,14 @@ if __name__ == "__main__":
     zhubi_index = 0
     zhubi_rows_num = int(df_zhubi.shape[0])
     for tick_row in df_tick.itertuples():
+        logfile.debug(str.format("tick_row index {}", tick_row[0]))
         tick_time = getattr(tick_row, "time")
         if tick_time == "time":
             # df_tick.drop(index=[tick_row[0], tick_row[0]], inplace=True)
             continue
         zhubi_total_volume = 0.0
-        tick_v = float(getattr(tick_row, "volume"))
-        if tick_v > 0.0:
+        tick_v = getattr(tick_row, "volume")
+        if tick_v > str(0.0):
             tick_time = getattr(tick_row, "time")
             prev_zhubi_index = zhubi_index
             # for zhubi_row in df_zhubi.itertuples():
@@ -87,12 +90,15 @@ if __name__ == "__main__":
                 if zhubi_time == "time":
                     prev_zhubi_index = prev_zhubi_index + 1
                     continue
+                logfile.debug(str.format("zhubi_row index {}", i))
                 if tick_time < zhubi_time:
-                    if not math.isclose(tick_v, zhubi_total_volume, abs_tol=0.0000001):
-                        print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                    if math.isclose(float(tick_v), zhubi_total_volume, abs_tol=0.0000001):
+                        '''
+                        # print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                         # exit(0)
                     else:
-                        print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                        '''
+                        #print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                         # 插入逐笔数据
                         for j in range(prev_zhubi_index, i):
                             j_data = df_zhubi.loc[j]
