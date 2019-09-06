@@ -11,14 +11,14 @@ import logfile
 def get_df_tick_time(df, start_index, total_rows):
     tick_time = ""
     tick_row_num = -1
-    num_temp = 0
-    for index in range(start_index, total_rows):
-        row = df.loc[index]
-        row_time = getattr(row, "time")
-        if row_time == "time":
-            continue
-        if pd.isna(getattr(row, "bs")):
-            return row_time, index
+    if start_index < total_rows:
+        for index in range(start_index, total_rows):
+            row = df.loc[index]
+            row_time = getattr(row, "time")
+            if row_time == "time":
+                continue
+            if pd.isna(getattr(row, "bs")):
+                return row_time, index
     return tick_time, tick_row_num
 
 
@@ -61,21 +61,27 @@ if __name__ == "__main__":
                 print(f"coin time len: {len(coin_time)}")
                 break
             '''
-            if coin_row_index >= 0:
-                coin_times.append(coin_time)
-                coin_row_indexes.append(coin_row_index)
-        if len(coin_times) == 0:
+            coin_times.append(coin_time)
+            coin_row_indexes.append(coin_row_index)
+
+        read_over = True
+        for index in range(0, len(coin_times)):
+            if coin_row_indexes[index] >= 0:
+                read_over = False
+                break
+
+        if read_over:
             print(f"Can not get any row now")
             break
 
         # time sort
         smallest_time = coin_times[0]
-        smallest_index = 0
-        if len(coin_times) > 1:
-            for index in range(1, len(coin_times)):
-                if coin_times[index] < smallest_time:
-                    smallest_time = coin_times[index]
-                    smallest_index = index
+        smallest_index = -1
+        for index in range(0, len(coin_times)):
+            if (smallest_index == -1 and coin_row_indexes[index] > 0) or (coin_row_indexes[index] > 0 and
+                                                                          coin_times[index] < smallest_time):
+                smallest_time = coin_times[index]
+                smallest_index = index
 
         for temp in range(df_start_index[smallest_index], coin_row_indexes[smallest_index] + 1):
             df_output = df_output.append(df_coins[smallest_index].loc[temp])
