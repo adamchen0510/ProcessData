@@ -9,45 +9,48 @@ import logfile
 
 
 def new_zhubi_df(df_row):
-    return pd.DataFrame({"exchange_time": [getattr(df_row, "exchange_time")],
+    return pd.DataFrame({"time": [pd.to_datetime(getattr(df_row, "time"))],
                          "contract": [getattr(df_row, "contract")],
                          "price": [getattr(df_row, "price")],
                          "bs": [getattr(df_row, "bs")],
                          "amount": [getattr(df_row, "amount")],
-                         "exchange_timestamp": [getattr(df_row,
-                                                        "exchange_timestamp")],
-                         "time": [getattr(df_row, "time")],
-                         "timestamp": [getattr(df_row, "timestamp")],
                          "last": "",
                          "volume": "",
                          "ask_0_p": "",
                          "ask_0_v": "",
                          "bid_0_p": "",
                          "bid_0_v": "",
+                         "exchange_time": [getattr(df_row, "exchange_time")],
+                         "exchange_timestamp": [getattr(df_row,
+                                                        "exchange_timestamp")],
+                         "timestamp": [getattr(df_row, "timestamp")],
                          "IsDataNormal": "0"
                          })
 
 
-def new_tick_df(df_row):
-    return pd.DataFrame({"exchange_time": "",
-                         "contract": "",
+def new_tick_df(df_row, contract_name):
+    return pd.DataFrame({"time": [pd.to_datetime(getattr(df_row, "time"))],
+                         "contract": contract_name,
                          "price": "",
                          "bs": "",
                          "amount": "",
-                         "exchange_timestamp": "",
-                         "time": [getattr(df_row, "time")],
-                         "timestamp": getattr(df_row, "timestamp"),
                          "last": getattr(df_row, "last"),
                          "volume": getattr(df_row, "volume"),
                          "ask_0_p": getattr(df_row, "ask_0_p"),
                          "ask_0_v": getattr(df_row, "ask_0_v"),
                          "bid_0_p": getattr(df_row, "bid_0_p"),
                          "bid_0_v": getattr(df_row, "bid_0_v"),
+                         "exchange_time": "",
+                         "exchange_timestamp": "",
+                         "timestamp": getattr(df_row, "timestamp"),
                          "IsDataNormal": "0"
                          })
+
+
 def print_time(message):
     time_now = datetime.datetime.now().strftime('%Y.%m.%d-%H:%M:%S.%f')
     print(f"time: {time_now}, {message}")
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
@@ -64,13 +67,14 @@ if __name__ == "__main__":
     df_zhubi = pd.read_csv(zhubi_csv, dtype=str,
                            names=["exchange_time", "contract", "price", "bs", "amount", "exchange_timestamp", "time",
                                   "timestamp"])
-    df_total = pd.DataFrame(columns=("exchange_time", "contract", "price", "bs", "amount", "exchange_timestamp", "time",
-                                     "timestamp", "last", "volume", "ask_0_p", "ask_0_v", "bid_0_p", "bid_0_v",
-                                     "IsDataNormal"))
+    df_total = pd.DataFrame(columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
+                                     "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
+                                     "timestamp", "IsDataNormal"))
 
     df_zhubi_start_index = 0
     zhubi_index = 0
     zhubi_rows_num = int(df_zhubi.shape[0])
+    contract = ""
     for tick_row in df_tick.itertuples():
         logfile.debug(str.format("tick_row index {}", tick_row[0]))
         tick_time = getattr(tick_row, "time")
@@ -91,6 +95,7 @@ if __name__ == "__main__":
                     prev_zhubi_index = prev_zhubi_index + 1
                     continue
                 logfile.debug(str.format("zhubi_row index {}", i))
+                contract = getattr(zhubi_row, "contract")
                 if tick_time < zhubi_time:
                     if math.isclose(float(tick_v), zhubi_total_volume, abs_tol=0.0000001):
                         '''
@@ -98,14 +103,16 @@ if __name__ == "__main__":
                         # exit(0)
                     else:
                         '''
-                        #print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                        # print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                         # 插入逐笔数据
                         for j in range(prev_zhubi_index, i):
                             j_data = df_zhubi.loc[j]
                             df_total = pd.concat([df_total, new_zhubi_df(j_data)])
                         # 插入tick数据
-                        df_total = pd.concat([df_total, new_tick_df(tick_row)])
+                        df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
                     df_zhubi_start_index = zhubi_row[0]
                     break
                 zhubi_total_volume = zhubi_total_volume + float(getattr(zhubi_row, "amount"))
+                if i > 2000:
+                    break
     df_total.to_csv(output, index=False)

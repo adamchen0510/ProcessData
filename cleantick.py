@@ -33,7 +33,6 @@ if __name__ == "__main__":
                 if row_time == "time":
                     df.drop(index=[row[0], row[0]], inplace=True)
                     continue
-                print(f"row: {row}")
                 ask_price = getattr(row, "ask_0_p")
                 bid_price = getattr(row, "bid_0_p")
                 ask_volume = getattr(row, "ask_0_v")

@@ -2,7 +2,7 @@ import os
 import gzip
 
 start_time = "2019-08-01"
-end_time = "2019-08-02"
+end_time = "2019-08-01"
 
 
 def is_in_time(path):
