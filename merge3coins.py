@@ -90,15 +90,11 @@ if __name__ == "__main__":
                 smallest_time = coin_times[index]
                 smallest_index = index
 
-        # define writed indexes
+        if smallest_index == -1:
+            break
+
+        # define writed indexes: 0: missing, 1: will write
         writed_indexes = [0, 0, 0]
-
-        for temp in range(df_start_index[smallest_index], coin_row_indexes[smallest_index] + 1):
-            df_output = df_output.append(df_coins[smallest_index].loc[temp])
-        previous_write_range[smallest_index][0] = df_start_index[smallest_index]
-        previous_write_range[smallest_index][1] = coin_row_indexes[smallest_index] + 1
-        df_start_index[smallest_index] = coin_row_indexes[smallest_index] + 1
-
         writed_indexes[smallest_index] = 1
 
         # 判断时间差值是否小于delta
@@ -106,11 +102,6 @@ if __name__ == "__main__":
             if index != smallest_index and coin_row_indexes[index] >= 0:
                 if pd.to_datetime(coin_times[index]) <= time_diff_delta + pd.to_datetime(coin_times[smallest_index]):
                     print(f"datetime in delta: {pd.to_datetime(coin_times[index])}")
-                    for temp in range(df_start_index[index], coin_row_indexes[index] + 1):
-                        df_output = df_output.append(df_coins[index].loc[temp])
-                    previous_write_range[index][0] = df_start_index[index]
-                    previous_write_range[index][1] = coin_row_indexes[index] + 1
-                    df_start_index[index] = coin_row_indexes[index] + 1
                     writed_indexes[index] = 1
                 '''
                 else:
@@ -118,12 +109,19 @@ if __name__ == "__main__":
                           f'small datatime: {pd.to_datetime(coin_times[smallest_index])}')
                 '''
 
-        # 未写入信息的币种写入上次的信息
+        # 按顺序写入币种信息
+        # 未有新币种信息的币种写入上次的信息
         for index in range(0, len(writed_indexes)):
             if writed_indexes[index] == 0:
                 if previous_write_range[index][0] != -1:
                     for temp in range(previous_write_range[index][0], previous_write_range[index][1]):
                         df_output = df_output.append(df_coins[index].loc[temp])
+            elif writed_indexes[index] == 1:
+                for temp in range(df_start_index[index], coin_row_indexes[index] + 1):
+                    df_output = df_output.append(df_coins[index].loc[temp])
+                previous_write_range[index][0] = df_start_index[index]
+                previous_write_range[index][1] = coin_row_indexes[index] + 1
+                df_start_index[index] = coin_row_indexes[index] + 1
 
         if row_num > 1000: break
     df_output.to_csv(output, index=False)
