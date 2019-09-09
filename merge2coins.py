@@ -23,39 +23,37 @@ def get_df_tick_time(df, start_index, total_rows):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 5:
-        print(f"Usage python merge3coins.py $coin1.csv $coin2.csv $coin3.csv $outputFile")
+    if len(sys.argv) < 4:
+        print(f"Usage python merge3coins.py $coin1.csv $coin2.csv $outputFile")
         exit(0)
     logfile.init('log')
     coin1_csv = sys.argv[1]
     coin2_csv = sys.argv[2]
-    coin3_csv = sys.argv[3]
-    output = sys.argv[4]
-    print(f"coin1_csv: {coin1_csv} coin2_csv: {coin2_csv} coin3_csv: {coin3_csv}")
+    output = sys.argv[3]
+    print(f"coin1_csv: {coin1_csv} coin2_csv: {coin2_csv}")
 
     df_coin1 = pd.read_csv(coin1_csv)
     df_coin2 = pd.read_csv(coin2_csv)
-    df_coin3 = pd.read_csv(coin3_csv)
     df_output = pd.DataFrame(
         columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
                  "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
                  "timestamp", "IsDataNormal"))
 
-    df_coin1_index = df_coin2_index = df_coin3_index = 0
-    df_coin1_write_index = df_coin2_write_index = df_coin3_write_index = 0
+    df_coin1_index = df_coin2_index = 0
+    df_coin1_write_index = df_coin2_write_index = 0
 
-    df_coins = [df_coin1, df_coin2, df_coin3]
-    df_start_index = [df_coin1_index, df_coin2_index, df_coin3_index]
-    df_write_index = [df_coin1_write_index, df_coin2_write_index, df_coin3_write_index]
-    df_rows_num = [int(df_coin1.shape[0]), int(df_coin2.shape[0]), int(df_coin3.shape[0])]
-    max_rows_num = max(df_rows_num[0], df_rows_num[1], df_rows_num[2])
+    df_coins = [df_coin1, df_coin2]
+    df_start_index = [df_coin1_index, df_coin2_index]
+    df_write_index = [df_coin1_write_index, df_coin2_write_index]
+    df_rows_num = [int(df_coin1.shape[0]), int(df_coin2.shape[0])]
+    max_rows_num = max(df_rows_num[0], df_rows_num[1])
 
     # 定义时间差值表示，相差在delta内表示时间相同
     time_diff_delta = datetime.timedelta(milliseconds=5)
     print(f"time_diff_delta: {time_diff_delta}")
 
     # 定义之前写入的index
-    previous_write_range = [[-1, 0], [-1, 0], [-1, 0]]
+    previous_write_range = [[-1, 0], [-1, 0]]
 
     for row_num in range(0, max_rows_num):
         # find tow times
@@ -94,7 +92,7 @@ if __name__ == "__main__":
             break
 
         # define writed indexes: 0: missing, 1: will write
-        writed_indexes = [0, 0, 0]
+        writed_indexes = [0, 0]
         writed_indexes[smallest_index] = 1
 
         # 判断时间差值是否小于delta
