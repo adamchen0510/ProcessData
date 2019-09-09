@@ -8,7 +8,7 @@ import pandas as pd
 import logfile
 
 
-def new_zhubi_df(df_row):
+def new_zhubi_df(df_row, normal):
     return pd.DataFrame({"time": [pd.to_datetime(getattr(df_row, "time"))],
                          "contract": [getattr(df_row, "contract")],
                          "price": [getattr(df_row, "price")],
@@ -24,7 +24,7 @@ def new_zhubi_df(df_row):
                          "exchange_timestamp": [getattr(df_row,
                                                         "exchange_timestamp")],
                          "timestamp": [getattr(df_row, "timestamp")],
-                         "IsDataNormal": "0"
+                         "IsDataNormal": normal
                          })
 
 
@@ -43,13 +43,10 @@ def new_tick_df(df_row, contract_name):
                          "exchange_time": "",
                          "exchange_timestamp": "",
                          "timestamp": getattr(df_row, "timestamp"),
-                         "IsDataNormal": "0"
+                         "IsDataNormal": 1
                          })
 
 
-def print_time(message):
-    time_now = datetime.datetime.now().strftime('%Y.%m.%d-%H:%M:%S.%f')
-    print(f"time: {time_now}, {message}")
 
 
 if __name__ == "__main__":
@@ -63,10 +60,7 @@ if __name__ == "__main__":
     print(f"tick_csv: {tick_csv} zhubi_csv: {zhubi_csv}")
 
     df_tick = pd.read_csv(tick_csv)
-                          #,names=["time", "timestamp", "last", "volume", "ask_0_p", "ask_0_v", "bid_0_p", "bid_0_v"])
     df_zhubi = pd.read_csv(zhubi_csv)
-                           #,names=["exchange_time", "contract", "price", "bs", "amount", "exchange_timestamp", "time",
-                            #      "timestamp"])
     df_total = pd.DataFrame(columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
                                      "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
                                      "timestamp", "IsDataNormal"))
@@ -74,10 +68,13 @@ if __name__ == "__main__":
     df_tick.info()
     df_zhubi.info()
 
-    df_zhubi_start_index = 0
     zhubi_index = 0
     zhubi_rows_num = int(df_zhubi.shape[0])
     contract = ""
+
+    # 定义时间差值，相差在delta内算作同一个tick内
+    time_diff_delta = datetime.timedelta(milliseconds=500)
+    total_search_num = 1
     for tick_row in df_tick.itertuples():
         #logfile.debug(str.format("tick_row index {}", tick_row[0]))
         tick_time = getattr(tick_row, "time")
@@ -100,23 +97,41 @@ if __name__ == "__main__":
                 #logfile.debug(str.format("zhubi_row index {}", i))
                 contract = getattr(zhubi_row, "contract")
                 if tick_time < zhubi_time:
-                    if math.isclose(float(tick_v), zhubi_total_volume, abs_tol=0.0000001):
-                        '''
-                        # print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
-                        # exit(0)
-                    else:
-                        '''
-                        print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                    if math.isclose(tick_v, zhubi_total_volume, abs_tol=0.0000001):
+                        # print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                         # 插入逐笔数据
                         for j in range(prev_zhubi_index, i):
                             j_data = df_zhubi.loc[j]
-                            df_total = pd.concat([df_total, new_zhubi_df(j_data)])
+                            df_total = pd.concat([df_total, new_zhubi_df(j_data, 1)])
                         # 插入tick数据
                         df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
                     else:
-                        print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
-                    df_zhubi_start_index = zhubi_row[0]
+                        '''
+                        if tick_v > zhubi_total_volume:
+                            print(f"tick_v bigger than zhubi_total_volume")
+                            temp_zhubi_total_volume = zhubi_total_volume
+                            for k in range(0, total_search_num):
+                                temp_row = df_zhubi.loc[i+1+k]
+                                temp_time = getattr(temp_row, "time")
+                                if pd.to_datetime(temp_time) <= time_diff_delta + pd.to_datetime(tick_time):
+                                    temp_zhubi_total_volume = temp_zhubi_total_volume + getattr(temp_row, "amount")
+                                    if math.isclose(tick_v, temp_zhubi_total_volume, abs_tol=0.0000001):
+                                        # 插入逐笔数据
+                                        print(f"Insert 0")
+                                        for j in range(prev_zhubi_index, i+k+1):
+                                            j_data = df_zhubi.loc[j]
+                                            df_total = pd.concat([df_total, new_zhubi_df(j_data, 0)])
+                                        # 插入tick数据
+                                        df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
+                                    else:
+                                        print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                                else:
+                                    print(f"temp_time: {pd.to_datetime(temp_time)} tick_time: {pd.to_datetime(tick_time)}")
+                        else:
+                            print(f"Error: tick v: {tick_v} volume smaller than total zhubi volume: {zhubi_total_volume}")
+                        '''
+                        # print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                     break
-                zhubi_total_volume = zhubi_total_volume + float(getattr(zhubi_row, "amount"))
-                if i > 2000: break
+                zhubi_total_volume = zhubi_total_volume + getattr(zhubi_row, "amount")
+        if tick_row[0] > 1000: break
     df_total.to_csv(output, index=False)
