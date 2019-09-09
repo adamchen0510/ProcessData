@@ -33,9 +33,9 @@ if __name__ == "__main__":
     output = sys.argv[4]
     print(f"coin1_csv: {coin1_csv} coin2_csv: {coin2_csv} coin3_csv: {coin3_csv}")
 
-    df_coin1 = pd.read_csv(coin1_csv, dtype=str)
-    df_coin2 = pd.read_csv(coin2_csv, dtype=str)
-    df_coin3 = pd.read_csv(coin3_csv, dtype=str)
+    df_coin1 = pd.read_csv(coin1_csv)
+    df_coin2 = pd.read_csv(coin2_csv)
+    df_coin3 = pd.read_csv(coin3_csv)
     df_output = pd.DataFrame(
         columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
                  "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
@@ -78,8 +78,8 @@ if __name__ == "__main__":
         smallest_time = coin_times[0]
         smallest_index = -1
         for index in range(0, len(coin_times)):
-            if (smallest_index == -1 and coin_row_indexes[index] > 0) or (coin_row_indexes[index] > 0 and
-                                                                          coin_times[index] < smallest_time):
+            if (smallest_index == -1 and coin_row_indexes[index] > 0) or \
+                    (coin_row_indexes[index] > 0 and coin_times[index] < smallest_time):
                 smallest_time = coin_times[index]
                 smallest_index = index
 
@@ -87,5 +87,6 @@ if __name__ == "__main__":
             df_output = df_output.append(df_coins[smallest_index].loc[temp])
         df_start_index[smallest_index] = coin_row_indexes[smallest_index] + 1
 
-        if row_num > 1000: break
     df_output.to_csv(output, index=False)
+
+    df_output.info()

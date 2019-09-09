@@ -22,7 +22,7 @@ if __name__ == "__main__":
         path = os.path.join(data_dir, file_list[i])
         if util.is_zhubi_raw_file(path):
             print(f"file is:{path}")
-            df_temp = pd.read_csv(path, dtype=str, names=["exchange_time", "contract", "price", "bs", "amount", "exchange_timestamp", "time", "timestamp"])
+            df_temp = pd.read_csv(path, names=["exchange_time", "contract", "price", "bs", "amount", "exchange_timestamp", "time", "timestamp"])
 
             # 删除有空值的行
             df_temp = df_temp.dropna()
@@ -38,7 +38,7 @@ if __name__ == "__main__":
                 volume = getattr(row, "amount")
 
                 # check price and volume
-                if price <= "0.0" or volume <= "0.0":
+                if price <= 0.0 or volume <= 0.0:
                     print(f"unexpected price: {price}, volume: {volume}, row: {row[0]}")
                     df.drop(index=[row[0], row[0]], inplace=True)
 

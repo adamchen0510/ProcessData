@@ -39,12 +39,15 @@ if __name__ == "__main__":
     eth_symbol = "eth.usdt"
     lrc_symbol = "lrc.eth"
 
-    df_eth = pd.read_csv(eth_csv, dtype=str)
-    df_lrc = pd.read_csv(lrc_csv, dtype=str)
+    df_eth = pd.read_csv(eth_csv)
+    df_lrc = pd.read_csv(lrc_csv)
     df_output = pd.DataFrame(
         columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
                  "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
                  "timestamp", "IsDataNormal"))
+
+    df_eth.info()
+    df_lrc.info()
 
     df_eth_write_index = 0
     df_lrc_write_index = 0

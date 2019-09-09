@@ -62,28 +62,31 @@ if __name__ == "__main__":
     output = sys.argv[3]
     print(f"tick_csv: {tick_csv} zhubi_csv: {zhubi_csv}")
 
-    df_tick = pd.read_csv(tick_csv, dtype=str,
-                          names=["time", "timestamp", "last", "volume", "ask_0_p", "ask_0_v", "bid_0_p", "bid_0_v"])
-    df_zhubi = pd.read_csv(zhubi_csv, dtype=str,
-                           names=["exchange_time", "contract", "price", "bs", "amount", "exchange_timestamp", "time",
-                                  "timestamp"])
+    df_tick = pd.read_csv(tick_csv)
+                          #,names=["time", "timestamp", "last", "volume", "ask_0_p", "ask_0_v", "bid_0_p", "bid_0_v"])
+    df_zhubi = pd.read_csv(zhubi_csv)
+                           #,names=["exchange_time", "contract", "price", "bs", "amount", "exchange_timestamp", "time",
+                            #      "timestamp"])
     df_total = pd.DataFrame(columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
                                      "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
                                      "timestamp", "IsDataNormal"))
+
+    df_tick.info()
+    df_zhubi.info()
 
     df_zhubi_start_index = 0
     zhubi_index = 0
     zhubi_rows_num = int(df_zhubi.shape[0])
     contract = ""
     for tick_row in df_tick.itertuples():
-        logfile.debug(str.format("tick_row index {}", tick_row[0]))
+        #logfile.debug(str.format("tick_row index {}", tick_row[0]))
         tick_time = getattr(tick_row, "time")
         if tick_time == "time":
             # df_tick.drop(index=[tick_row[0], tick_row[0]], inplace=True)
             continue
         zhubi_total_volume = 0.0
         tick_v = getattr(tick_row, "volume")
-        if tick_v > str(0.0):
+        if tick_v > 0.0:
             tick_time = getattr(tick_row, "time")
             prev_zhubi_index = zhubi_index
             # for zhubi_row in df_zhubi.itertuples():
@@ -94,7 +97,7 @@ if __name__ == "__main__":
                 if zhubi_time == "time":
                     prev_zhubi_index = prev_zhubi_index + 1
                     continue
-                logfile.debug(str.format("zhubi_row index {}", i))
+                #logfile.debug(str.format("zhubi_row index {}", i))
                 contract = getattr(zhubi_row, "contract")
                 if tick_time < zhubi_time:
                     if math.isclose(float(tick_v), zhubi_total_volume, abs_tol=0.0000001):
@@ -103,16 +106,17 @@ if __name__ == "__main__":
                         # exit(0)
                     else:
                         '''
-                        # print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                        print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                         # 插入逐笔数据
                         for j in range(prev_zhubi_index, i):
                             j_data = df_zhubi.loc[j]
                             df_total = pd.concat([df_total, new_zhubi_df(j_data)])
                         # 插入tick数据
                         df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
+                    else:
+                        print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                     df_zhubi_start_index = zhubi_row[0]
                     break
                 zhubi_total_volume = zhubi_total_volume + float(getattr(zhubi_row, "amount"))
-                if i > 2000:
-                    break
+                if i > 2000: break
     df_total.to_csv(output, index=False)

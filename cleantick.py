@@ -22,8 +22,10 @@ if __name__ == "__main__":
         path = os.path.join(data_dir, file_list[i])
         if util.is_tick_raw_file(path):
             print(f"file is:{path}")
-            df_temp = pd.read_csv(path, dtype=str, names=["time", "timestamp", "last", "volume", "ask_0_p", "ask_0_v", "bid_0_p", "bid_0_v"])
+            df_temp = pd.read_csv(path)
+            #dtype=str, names=["time", "timestamp", "last", "volume", "ask_0_p", "ask_0_v", "bid_0_p", "bid_0_v"])
 
+            df_temp.info()
             # 删除有空值的行
             df_temp = df_temp.dropna()
 
@@ -39,10 +41,10 @@ if __name__ == "__main__":
                 bid_volume = getattr(row, "bid_0_v")
 
                 # check price and volume
-                if ask_price <= "0.0" or \
-                        bid_price <= "0.0" or \
-                        ask_volume <= "0.0" or \
-                        bid_volume <= "0.0":
+                if ask_price <= 0.0 or \
+                        bid_price <= 0.0 or \
+                        ask_volume <= 0.0 or \
+                        bid_volume <= 0.0:
                     print(f"unexpected ask_price: {ask_price}, bid_price: {bid_price}, ask_volume: {ask_volume}, "
                           f"bid_volume: {bid_volume}, row: {row[0]}")
                     df.drop(index=[row[0], row[0]], inplace=True)
