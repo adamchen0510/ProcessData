@@ -47,8 +47,6 @@ def new_tick_df(df_row, contract_name):
                          })
 
 
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(f"Usage python mergetickzhubi.py $tick.csv $zhubi.csv $outputFile")
@@ -59,8 +57,8 @@ if __name__ == "__main__":
     output = sys.argv[3]
     print(f"tick_csv: {tick_csv} zhubi_csv: {zhubi_csv}")
 
-    df_tick = pd.read_csv(tick_csv)
-    df_zhubi = pd.read_csv(zhubi_csv)
+    df_tick = pd.read_csv(tick_csv, float_precision='round_trip')
+    df_zhubi = pd.read_csv(zhubi_csv, float_precision='round_trip')
     df_total = pd.DataFrame(columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
                                      "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
                                      "timestamp", "IsDataNormal"))
@@ -73,12 +71,12 @@ if __name__ == "__main__":
     contract = ""
 
     # 定义时间差值，相差在delta内算作同一个tick内
-    time_diff_delta = datetime.timedelta(milliseconds=500)
+    time_diff_delta = datetime.timedelta(milliseconds=50)
     total_search_num = 1
     prev_total_fail = False
     prev_zhubi_volume = 0.0
     for tick_row in df_tick.itertuples():
-        #logfile.debug(str.format("tick_row index {}", tick_row[0]))
+        # logfile.debug(str.format("tick_row index {}", tick_row[0]))
         tick_time = getattr(tick_row, "time")
         if tick_time == "time":
             # df_tick.drop(index=[tick_row[0], tick_row[0]], inplace=True)
@@ -100,24 +98,32 @@ if __name__ == "__main__":
                 if zhubi_time == "time":
                     prev_zhubi_index = prev_zhubi_index + 1
                     continue
-                #logfile.debug(str.format("zhubi_row index {}", i))
+                # logfile.debug(str.format("zhubi_row index {}", i))
                 contract = getattr(zhubi_row, "contract")
                 if math.isclose(tick_v, zhubi_total_volume, abs_tol=0.0000001):
-                    #if tick_time >= zhubi_time:
-                    print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                    # if tick_time >= zhubi_time:
+                    print(f"Expected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                     # 插入逐笔数据
                     for j in range(prev_zhubi_index, i):
                         j_data = df_zhubi.loc[j]
-                        df_total = pd.concat([df_total, new_zhubi_df(j_data, 1)])
+                        temp_time = getattr(j_data, "time")
+                        if temp_time >= tick_time:
+                            print(f"Abnormal time: row: {j_data[0]} zhubi_time: {temp_time}, tick_time: {tick_time}")
+                            df_total = pd.concat([df_total, new_zhubi_df(j_data, 0)])
+                        else:
+                            df_total = pd.concat([df_total, new_zhubi_df(j_data, 1)])
                     # 插入tick数据
                     df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
                     break
-                elif zhubi_total_volume > tick_v:
-                    print(f"zhubi_total_volume: {zhubi_total_volume} > tick_v: {tick_v}")
-                    prev_total_fail = True
-                    break
+                # 逐笔time大于tick_time+diff
+                else:
+                    if zhubi_time > tick_time:
+                        if pd.to_datetime(zhubi_time) > time_diff_delta + pd.to_datetime(tick_time):
+                            # or pd.to_datetime(tick_time) > time_diff_delta + pd.to_datetime(zhubi_time):
+                            print(f"Ignore Invalid time, zhubi_total_volume: {zhubi_total_volume}, tick_v: {tick_v}")
+                            break
                     # print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                 prev_zhubi_volume = getattr(zhubi_row, "amount")
                 zhubi_total_volume = zhubi_total_volume + prev_zhubi_volume
-        if tick_row[0] > 2000: break
+        # if tick_row[0] > 4000: break
     df_total.to_csv(output, index=False)
