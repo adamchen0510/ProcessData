@@ -75,6 +75,8 @@ if __name__ == "__main__":
     # 定义时间差值，相差在delta内算作同一个tick内
     time_diff_delta = datetime.timedelta(milliseconds=500)
     total_search_num = 1
+    prev_total_fail = False
+    prev_zhubi_volume = 0.0
     for tick_row in df_tick.itertuples():
         #logfile.debug(str.format("tick_row index {}", tick_row[0]))
         tick_time = getattr(tick_row, "time")
@@ -82,6 +84,10 @@ if __name__ == "__main__":
             # df_tick.drop(index=[tick_row[0], tick_row[0]], inplace=True)
             continue
         zhubi_total_volume = 0.0
+        if prev_total_fail:
+            zhubi_total_volume = prev_zhubi_volume
+            prev_total_fail = False
+            zhubi_index = zhubi_index - 1
         tick_v = getattr(tick_row, "volume")
         if tick_v > 0.0:
             tick_time = getattr(tick_row, "time")
@@ -96,42 +102,22 @@ if __name__ == "__main__":
                     continue
                 #logfile.debug(str.format("zhubi_row index {}", i))
                 contract = getattr(zhubi_row, "contract")
-                if tick_time < zhubi_time:
-                    if math.isclose(tick_v, zhubi_total_volume, abs_tol=0.0000001):
-                        # print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
-                        # 插入逐笔数据
-                        for j in range(prev_zhubi_index, i):
-                            j_data = df_zhubi.loc[j]
-                            df_total = pd.concat([df_total, new_zhubi_df(j_data, 1)])
-                        # 插入tick数据
-                        df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
-                    else:
-                        '''
-                        if tick_v > zhubi_total_volume:
-                            print(f"tick_v bigger than zhubi_total_volume")
-                            temp_zhubi_total_volume = zhubi_total_volume
-                            for k in range(0, total_search_num):
-                                temp_row = df_zhubi.loc[i+1+k]
-                                temp_time = getattr(temp_row, "time")
-                                if pd.to_datetime(temp_time) <= time_diff_delta + pd.to_datetime(tick_time):
-                                    temp_zhubi_total_volume = temp_zhubi_total_volume + getattr(temp_row, "amount")
-                                    if math.isclose(tick_v, temp_zhubi_total_volume, abs_tol=0.0000001):
-                                        # 插入逐笔数据
-                                        print(f"Insert 0")
-                                        for j in range(prev_zhubi_index, i+k+1):
-                                            j_data = df_zhubi.loc[j]
-                                            df_total = pd.concat([df_total, new_zhubi_df(j_data, 0)])
-                                        # 插入tick数据
-                                        df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
-                                    else:
-                                        print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
-                                else:
-                                    print(f"temp_time: {pd.to_datetime(temp_time)} tick_time: {pd.to_datetime(tick_time)}")
-                        else:
-                            print(f"Error: tick v: {tick_v} volume smaller than total zhubi volume: {zhubi_total_volume}")
-                        '''
-                        # print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                if math.isclose(tick_v, zhubi_total_volume, abs_tol=0.0000001):
+                    #if tick_time >= zhubi_time:
+                    print(f"inexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                    # 插入逐笔数据
+                    for j in range(prev_zhubi_index, i):
+                        j_data = df_zhubi.loc[j]
+                        df_total = pd.concat([df_total, new_zhubi_df(j_data, 1)])
+                    # 插入tick数据
+                    df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
                     break
-                zhubi_total_volume = zhubi_total_volume + getattr(zhubi_row, "amount")
-        if tick_row[0] > 1000: break
+                elif zhubi_total_volume > tick_v:
+                    print(f"zhubi_total_volume: {zhubi_total_volume} > tick_v: {tick_v}")
+                    prev_total_fail = True
+                    break
+                    # print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
+                prev_zhubi_volume = getattr(zhubi_row, "amount")
+                zhubi_total_volume = zhubi_total_volume + prev_zhubi_volume
+        if tick_row[0] > 2000: break
     df_total.to_csv(output, index=False)
