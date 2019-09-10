@@ -9,42 +9,41 @@ import logfile
 
 
 def new_zhubi_df(df_row, normal):
-    return pd.DataFrame({"time": [pd.to_datetime(getattr(df_row, "time"))],
-                         "contract": [getattr(df_row, "contract")],
-                         "price": [getattr(df_row, "price")],
-                         "bs": [getattr(df_row, "bs")],
-                         "amount": [getattr(df_row, "amount")],
-                         "last": "",
-                         "volume": "",
-                         "ask_0_p": "",
-                         "ask_0_v": "",
-                         "bid_0_p": "",
-                         "bid_0_v": "",
-                         "exchange_time": [getattr(df_row, "exchange_time")],
-                         "exchange_timestamp": [getattr(df_row,
-                                                        "exchange_timestamp")],
-                         "timestamp": [getattr(df_row, "timestamp")],
-                         "IsDataNormal": normal
-                         })
+    return [pd.to_datetime(getattr(df_row, "time")),  # time
+            getattr(df_row, "contract"),  # "contract":
+            getattr(df_row, "price"),  # " price":
+            getattr(df_row, "bs"),  # "bs":
+            getattr(df_row, "amount"),  # "amount":
+            "",  # "last":
+            "",  # "volume":
+            "",  # "ask_0_p":
+            "",  # "ask_0_v":
+            "",  # "bid_0_p":
+            "",  # "bid_0_v":
+            getattr(df_row, "exchange_time"),  # "exchange_time":
+            getattr(df_row, "exchange_timestamp"),  # "exchange_timestamp":
+            getattr(df_row, "timestamp"),  # "timestamp":
+            normal  # "IsDataNormal":
+            ]
 
 
 def new_tick_df(df_row, contract_name):
-    return pd.DataFrame({"time": [pd.to_datetime(getattr(df_row, "time"))],
-                         "contract": contract_name,
-                         "price": "",
-                         "bs": "",
-                         "amount": "",
-                         "last": getattr(df_row, "last"),
-                         "volume": getattr(df_row, "volume"),
-                         "ask_0_p": getattr(df_row, "ask_0_p"),
-                         "ask_0_v": getattr(df_row, "ask_0_v"),
-                         "bid_0_p": getattr(df_row, "bid_0_p"),
-                         "bid_0_v": getattr(df_row, "bid_0_v"),
-                         "exchange_time": "",
-                         "exchange_timestamp": "",
-                         "timestamp": getattr(df_row, "timestamp"),
-                         "IsDataNormal": 1
-                         })
+    return [pd.to_datetime(getattr(df_row, "time")),  # time
+            contract_name,  # "contract":
+            "",  # " price":
+            "",  # "bs":
+            "",  # "amount":
+            getattr(df_row, "last"),  # "last":
+            getattr(df_row, "volume"),  # "volume":
+            getattr(df_row, "ask_0_p"),  # "ask_0_p":
+            getattr(df_row, "ask_0_v"),  # "ask_0_v":
+            getattr(df_row, "bid_0_p"),  # "bid_0_p":
+            getattr(df_row, "bid_0_v"),  # "bid_0_v":
+            "",  # "exchange_time":
+            "",  # "exchange_timestamp":
+            getattr(df_row, "timestamp"),  # "timestamp":
+            1  # "IsDataNormal":
+            ]
 
 
 if __name__ == "__main__":
@@ -59,9 +58,11 @@ if __name__ == "__main__":
 
     df_tick = pd.read_csv(tick_csv, float_precision='round_trip')
     df_zhubi = pd.read_csv(zhubi_csv, float_precision='round_trip')
+    '''
     df_total = pd.DataFrame(columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
                                      "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
                                      "timestamp", "IsDataNormal"))
+    '''
 
     df_tick.info()
     df_zhubi.info()
@@ -75,9 +76,11 @@ if __name__ == "__main__":
     total_search_num = 1
     prev_total_fail = False
     prev_zhubi_volume = 0.0
+
+    result_array = []
     for tick_row in df_tick.itertuples():
         # logfile.debug(str.format("tick_row index {}", tick_row[0]))
-        tick_time = getattr(tick_row, "time")
+        tick_time = getattr(tick_row, 'time')
         if tick_time == "time":
             # df_tick.drop(index=[tick_row[0], tick_row[0]], inplace=True)
             continue
@@ -86,9 +89,8 @@ if __name__ == "__main__":
             zhubi_total_volume = prev_zhubi_volume
             prev_total_fail = False
             zhubi_index = zhubi_index - 1
-        tick_v = getattr(tick_row, "volume")
+        tick_v = getattr(tick_row, 'volume')
         if tick_v > 0.0:
-            tick_time = getattr(tick_row, "time")
             prev_zhubi_index = zhubi_index
             # for zhubi_row in df_zhubi.itertuples():
             for i in range(zhubi_index, zhubi_rows_num):
@@ -109,11 +111,11 @@ if __name__ == "__main__":
                         temp_time = getattr(j_data, "time")
                         if temp_time >= tick_time:
                             print(f"Abnormal time: row: {j_data[0]} zhubi_time: {temp_time}, tick_time: {tick_time}")
-                            df_total = pd.concat([df_total, new_zhubi_df(j_data, 0)])
+                            result_array.append(new_zhubi_df(j_data, 0))
                         else:
-                            df_total = pd.concat([df_total, new_zhubi_df(j_data, 1)])
+                            result_array.append(new_zhubi_df(j_data, 1))
                     # 插入tick数据
-                    df_total = pd.concat([df_total, new_tick_df(tick_row, contract)])
+                    result_array.append(new_tick_df(tick_row, contract))
                     break
                 # 逐笔time大于tick_time+diff
                 else:
@@ -125,5 +127,9 @@ if __name__ == "__main__":
                     # print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                 prev_zhubi_volume = getattr(zhubi_row, "amount")
                 zhubi_total_volume = zhubi_total_volume + prev_zhubi_volume
-        # if tick_row[0] > 4000: break
-    df_total.to_csv(output, index=False)
+        #if tick_row[0] > 1000: break
+    df_total = pd.DataFrame(result_array,
+                            columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
+                                     "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
+                                     "timestamp", "IsDataNormal"))
+    df_total.to_csv(output, index=False, )
