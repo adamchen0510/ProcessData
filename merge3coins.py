@@ -54,6 +54,7 @@ if __name__ == "__main__":
     previous_write_range = [[-1, 0], [-1, 0], [-1, 0]]
 
     result_array = []
+    df_append = False
 
     for row_num in range(0, max_rows_num):
         # find tow times
@@ -123,11 +124,14 @@ if __name__ == "__main__":
                 previous_write_range[index][1] = coin_row_indexes[index] + 1
                 df_start_index[index] = coin_row_indexes[index] + 1
 
-        # if row_num > 1000: break
-    df_output = pd.DataFrame(result_array,
-                             columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
-                                      "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
-                                      "timestamp", "IsDataNormal"))
-    df_output.to_csv(output, index=False)
-
-    df_output.info()
+        if len(result_array) >= 1000000:
+            df_output = pd.DataFrame(result_array,
+                                     columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
+                                              "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
+                                              "timestamp", "IsDataNormal"))
+            if not df_append:
+                df_output.to_csv(output, index=False)
+                df_append = True
+                result_array = []
+            else:
+                df_output.to_csv(output, mode="a", index=False, header=False)

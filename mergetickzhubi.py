@@ -78,6 +78,8 @@ if __name__ == "__main__":
     prev_zhubi_volume = 0.0
 
     result_array = []
+    df_append = False
+
     for tick_row in df_tick.itertuples():
         # logfile.debug(str.format("tick_row index {}", tick_row[0]))
         tick_time = getattr(tick_row, 'time')
@@ -127,9 +129,16 @@ if __name__ == "__main__":
                     # print(f"unexpected tick v: {tick_v}, total_zhubi_v: {zhubi_total_volume}")
                 prev_zhubi_volume = getattr(zhubi_row, "amount")
                 zhubi_total_volume = zhubi_total_volume + prev_zhubi_volume
-        #if tick_row[0] > 1000: break
-    df_total = pd.DataFrame(result_array,
-                            columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
-                                     "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
-                                     "timestamp", "IsDataNormal"))
-    df_total.to_csv(output, index=False, )
+        # if tick_row[0] > 1000: break
+
+        if len(result_array) >= 10000:
+            df_total = pd.DataFrame(result_array,
+                                    columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
+                                             "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
+                                             "timestamp", "IsDataNormal"))
+            if not df_append:
+                df_total.to_csv(output, index=False)
+                df_append = True
+                result_array = []
+            else:
+                df_total.to_csv(output, mode="a", index=False, header=False)
