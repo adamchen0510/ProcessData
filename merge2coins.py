@@ -34,10 +34,6 @@ if __name__ == "__main__":
 
     df_coin1 = pd.read_csv(coin1_csv)
     df_coin2 = pd.read_csv(coin2_csv)
-    df_output = pd.DataFrame(
-        columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
-                 "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
-                 "timestamp", "IsDataNormal"))
 
     df_coin1_index = df_coin2_index = 0
     df_coin1_write_index = df_coin2_write_index = 0
@@ -53,7 +49,9 @@ if __name__ == "__main__":
     print(f"time_diff_delta: {time_diff_delta}")
 
     # 定义之前写入的index
-    previous_write_range = [[-1, 0], [-1, 0]]
+    previous_write_range = [[-1, 0], [-1, 0], [-1, 0]]
+
+    result_array = []
 
     for row_num in range(0, max_rows_num):
         # find tow times
@@ -92,7 +90,7 @@ if __name__ == "__main__":
             break
 
         # define writed indexes: 0: missing, 1: will write
-        writed_indexes = [0, 0]
+        writed_indexes = [0, 0, 0]
         writed_indexes[smallest_index] = 1
 
         # 判断时间差值是否小于delta
@@ -113,15 +111,21 @@ if __name__ == "__main__":
             if writed_indexes[index] == 0:
                 if previous_write_range[index][0] != -1:
                     for temp in range(previous_write_range[index][0], previous_write_range[index][1]):
-                        df_output = df_output.append(df_coins[index].loc[temp])
+                        # df_output = df_output.append(df_coins[index].loc[temp])
+                        result_array.append(df_coins[index].loc[temp].values)
             elif writed_indexes[index] == 1:
                 for temp in range(df_start_index[index], coin_row_indexes[index] + 1):
-                    df_output = df_output.append(df_coins[index].loc[temp])
+                    # df_output = df_output.append(df_coins[index].loc[temp])
+                    result_array.append(df_coins[index].loc[temp].values)
                 previous_write_range[index][0] = df_start_index[index]
                 previous_write_range[index][1] = coin_row_indexes[index] + 1
                 df_start_index[index] = coin_row_indexes[index] + 1
 
-        if row_num > 1000: break
+        # if row_num > 1000: break
+    df_output = pd.DataFrame(result_array,
+                             columns=("time", "contract", "price", "bs", "amount", "last", "volume", "ask_0_p",
+                                      "ask_0_v", "bid_0_p", "bid_0_v", "exchange_time", "exchange_timestamp",
+                                      "timestamp", "IsDataNormal"))
     df_output.to_csv(output, index=False)
 
     df_output.info()
