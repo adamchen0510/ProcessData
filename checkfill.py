@@ -5,6 +5,21 @@ import sys
 
 import pandas as pd
 
+# little and equal
+def isLE(first, second):
+    if first < second:
+        return True
+    if math.isclose(first, second, abs_tol=0.000000001):
+        return True
+    return False
+
+# bigger and equal
+def isBE(first, second):
+    if first > second:
+        return True
+    if math.isclose(first, second, abs_tol=0.000000001):
+        return True
+    return False
 
 def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orderduration,orderqueuenumber,contractname,orderunit):
     orderendtime = orderplacetime + orderduration
@@ -45,28 +60,28 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
             # print(f"Remain amount is {remain_amount}")
             if orderdirection == 'BUY':
                 # consider tick queue first
-                if math.isclose(tick_buy_price, orderplaceprice, abs_tol=0.000000001):
+                if isBE(tick_buy_price, orderplaceprice):
                     remain_amount -= tick_buy_volume
                     # print(f"2 Remain amount is {remain_amount}")
 
-                if remain_amount <= 0:
+                if isLE(remain_amount, 0):
                     continue
 
-                if row_price <= orderplaceprice:
+                if isLE(row_price, orderplaceprice):
                     filled_amount += remain_amount
 
             elif orderdirection == "SELL":
-                if math.isclose(tick_sell_price, orderplaceprice, abs_tol=0.000000001):
+                if isLE(tick_sell_price, orderplaceprice):
                     remain_amount -= tick_sell_volume
                     # print(f"3 Remain amount is {remain_amount}")
 
-                if remain_amount <= 0:
+                if isLE(remain_amount, 0):
                     continue
 
-                if row_price >= orderplaceprice:
-                    filled_amount += row_amount
+                if isBE(row_price, orderplaceprice):
+                    filled_amount += remain_amount
 
-            if filled_amount >= orderqueuenumber:
+            if isBE(filled_amount, orderqueuenumber):
                 print(f"Filled amount is {filled_amount} bigger than placed amount {orderqueuenumber}")
                 return True
 
@@ -81,7 +96,7 @@ if __name__ == "__main__":
     orderplacetime = datetime.datetime(2019, 8, 1, 0, tzinfo=datetime.timezone(datetime.timedelta(hours=0)))
     orderdirection = 'BUY'
     orderduration = datetime.timedelta(seconds=1200)
-    orderplaceprice = 0.00020
+    orderplaceprice = 0.00019642
     orderqueuenumber = 100000
     contractname = 'lrc.eth'
     filled = checkfillornot(marketdata, orderplacetime, orderdirection, orderplaceprice, orderduration, orderqueuenumber, contractname, 0)
