@@ -25,9 +25,10 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
                     filled_amount += row_amount
 
             if filled_amount >= orderqueuenumber:
-                print(f"Amount is {filled_amount}")
+                print(f"Filled amount is {filled_amount} bigger than placed amount {orderqueuenumber}")
                 return True
 
+    print(f"Filled amount is {filled_amount} little than placed amount {orderqueuenumber}")
     return False
 
 if __name__ == "__main__":
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     orderdirection = 'BUY'
     orderduration = datetime.timedelta(seconds=120)
     orderplaceprice = 0.000216
-    orderqueuenumber = 1000
+    orderqueuenumber = 100000
     contractname = 'lrc.eth'
     filled = checkfillornot(marketdata, orderplacetime, orderdirection, orderplaceprice, orderduration, orderqueuenumber, contractname, 0)
     print(f"Filled value is {filled}")
