@@ -14,13 +14,13 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
         row_datetime = pd.to_datetime(row_time)
         if orderplacetime < row_datetime < orderendtime:
             row_price = getattr(row, "price")
-            row_direction = getattr(row, "bs")
+            # row_direction = getattr(row, "bs")
             row_amount = getattr(row, "amount")
-            if orderdirection == 'BUY' and row_direction == "s":
+            if orderdirection == 'BUY':
                 if row_price <= orderplaceprice:
                     filled_amount += row_amount
 
-            elif orderdirection == "SELL" and row_direction == "b":
+            elif orderdirection == "SELL":
                 if row_price >= orderplaceprice:
                     filled_amount += row_amount
 
