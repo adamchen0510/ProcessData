@@ -29,14 +29,12 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
     tick_buy_price = tick_buy_volume = tick_sell_price = tick_sell_volume = 0.0
     prev_rowtime = ''
     prev_rowtime_set = False
+    # filter time
     filtered_marketdata = marketdata[marketdata['time'] >= orderplacetime.__str__()]
+    # filter contractName
+    filtered_marketdata = filtered_marketdata[filtered_marketdata['contract'] == contractname]
     for row in filtered_marketdata.itertuples():
-        # filter contractname
-        contract = getattr(row, "contract")
-        if contract.find(contractname) < 0:
-            continue
-
-        # filter tick data, update buy/sell price and volume
+        # tick data, update buy/sell price and volume
         if pd.isna(getattr(row, "bs")):
             # tick data
             tick_buy_price = getattr(row, "bid_0_p")
@@ -95,12 +93,12 @@ if __name__ == "__main__":
         print(f"Usage python checkfill.py $input.csv")
         exit(0)
     marketdata = pd.read_csv(sys.argv[1])
-    orderplacetime = datetime.datetime(2019, 8, 10, 0, tzinfo=datetime.timezone(datetime.timedelta(hours=0)))
+    orderplacetime = datetime.datetime(2019, 8, 1, 0, 5, tzinfo=datetime.timezone(datetime.timedelta(hours=0)))
     orderdirection = 'BUY'
     orderduration = datetime.timedelta(seconds=1200)
     orderplaceprice = 0.00019642
     orderqueuenumber = 100000
-    contractname = 'lrc.eth'
+    contractname = 'lrc.eth:xtc.binance'
     print("current time" + str(time.time()))
     filled = checkfillornot(marketdata, orderplacetime, orderdirection, orderplaceprice, orderduration, orderqueuenumber, contractname, 0)
     print("current time" + str(time.time()))
