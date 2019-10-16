@@ -29,10 +29,13 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
     tick_buy_price = tick_buy_volume = tick_sell_price = tick_sell_volume = 0.0
     prev_rowtime = ''
     prev_rowtime_set = False
-    # filter time
-    filtered_marketdata = marketdata[marketdata['time'] >= orderplacetime.__str__()]
+    filtered_marketdata = marketdata
     # filter contractName
     filtered_marketdata = filtered_marketdata[filtered_marketdata['contract'] == contractname]
+    # filter start time
+    filtered_marketdata = filtered_marketdata[filtered_marketdata['time'] >= orderplacetime.__str__()]
+    # filter end time
+    filtered_marketdata = filtered_marketdata[filtered_marketdata['time'] <= orderendtime.__str__()]
     for row in filtered_marketdata.itertuples():
         # tick data, update buy/sell price and volume
         if pd.isna(getattr(row, "bs")):
