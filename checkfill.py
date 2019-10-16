@@ -55,7 +55,7 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
         prev_rowtime_set = True
         row_datetime = pd.to_datetime(row_time)
 
-        if orderplacetime < row_datetime < orderendtime:
+        if orderplacetime <= row_datetime <= orderendtime:
             row_price = getattr(row, "price")
             # row_direction = getattr(row, "bs")
             row_amount = getattr(row, "amount")
