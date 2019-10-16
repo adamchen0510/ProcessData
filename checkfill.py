@@ -2,6 +2,7 @@
 import datetime
 import math
 import sys
+import time
 
 import pandas as pd
 
@@ -28,7 +29,8 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
     tick_buy_price = tick_buy_volume = tick_sell_price = tick_sell_volume = 0.0
     prev_rowtime = ''
     prev_rowtime_set = False
-    for row in marketdata.itertuples():
+    filtered_marketdata = marketdata[marketdata['time'] >= orderplacetime.__str__()]
+    for row in filtered_marketdata.itertuples():
         # filter contractname
         contract = getattr(row, "contract")
         if contract.find(contractname) < 0:
@@ -82,7 +84,7 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
                     filled_amount += remain_amount
 
             if isBE(filled_amount, orderqueuenumber):
-                print(f"Filled amount is {filled_amount} bigger than placed amount {orderqueuenumber}")
+                print(f"Filled amount is {filled_amount} bigger and equal than placed amount {orderqueuenumber}")
                 return True
 
     print(f"Filled amount is {filled_amount} little than placed amount {orderqueuenumber}")
@@ -93,11 +95,13 @@ if __name__ == "__main__":
         print(f"Usage python checkfill.py $input.csv")
         exit(0)
     marketdata = pd.read_csv(sys.argv[1])
-    orderplacetime = datetime.datetime(2019, 8, 1, 0, tzinfo=datetime.timezone(datetime.timedelta(hours=0)))
+    orderplacetime = datetime.datetime(2019, 8, 10, 0, tzinfo=datetime.timezone(datetime.timedelta(hours=0)))
     orderdirection = 'BUY'
     orderduration = datetime.timedelta(seconds=1200)
     orderplaceprice = 0.00019642
     orderqueuenumber = 100000
     contractname = 'lrc.eth'
+    print("current time" + str(time.time()))
     filled = checkfillornot(marketdata, orderplacetime, orderdirection, orderplaceprice, orderduration, orderqueuenumber, contractname, 0)
+    print("current time" + str(time.time()))
     print(f"Filled value is {filled}")
