@@ -27,6 +27,10 @@ def calc_fill_tick_amount(this_tick, next_tick, p, orderdirection):
     this_ask_v = this_tick[2]
     next_ask = next_tick[1]
     next_ask_v = next_tick[2]
+    this_bid = this_tick[3]
+    this_bid_v = this_tick[4]
+    next_bid = next_tick[3]
+    next_bid_v = next_tick[4]
     filled_amount = 0
     if orderdirection == "BUY":
         if this_ask > next_ask:
@@ -49,42 +53,81 @@ def calc_fill_tick_amount(this_tick, next_tick, p, orderdirection):
                 # do nothing
                 filled_amount = filled_amount
     elif orderdirection == "SELL":
-        filled_amount = filled_amount
+        if this_bid < next_bid:
+            if isBE(p, next_bid):
+                filled_amount = next_bid_v + this_bid_v
+            elif p < this_bid:
+                # do nothing
+                filled_amount = filled_amount
+            elif isBE(p, this_bid) and p < next_bid:
+                filled_amount = next_bid_v
+        elif this_bid == next_bid:
+            filled_amount = next_bid_v
+        elif this_bid > next_bid:
+            if isBE(p, this_bid):
+                filled_amount = next_bid_v
+            elif p < next_bid:
+                filled_amount = filled_amount
+            elif isBE(p, next_bid) and p < this_bid:
+                filled_amount = filled_amount
+
 
     return filled_amount
 
 def calc_fill_zhubi_amount(this_tick, next_tick, p, orderdirection, zhubi_p, zhubi_v):
     this_ask = this_tick[1]
-    this_ask_v = this_tick[2]
     next_ask = next_tick[1]
-    next_ask_v = next_tick[2]
+    this_bid = this_tick[3]
+    next_bid = next_tick[3]
     filled_amount = 0
     if orderdirection == "BUY":
         if this_ask > next_ask:
             if isBE(p, this_ask):
-                if zhubi_p <= p:
+                if isLE(zhubi_p, p):
                     filled_amount = zhubi_v
             elif p < next_ask:
-                if zhubi_p <= p:
+                if isLE(zhubi_p, p):
                     filled_amount = zhubi_v
             elif isBE(p, next_ask) and p < this_ask:
-                if zhubi_p <= p:
+                if isLE(zhubi_p, p):
                     filled_amount = zhubi_v
         elif this_ask == next_ask:
-            if zhubi_p <= p:
+            if isLE(zhubi_p, p):
                 filled_amount = zhubi_v
         elif this_ask < next_ask:
             if isBE(p, next_ask):
-                if zhubi_p <= p:
+                if isLE(zhubi_p, p):
                     filled_amount = zhubi_v
             elif p < this_ask:
-                if zhubi_p <= p:
+                if isLE(zhubi_p, p):
                     filled_amount = zhubi_v
             elif isBE(p, this_ask) and p < next_ask:
-                if zhubi_p <= p:
+                if isLE(zhubi_p, p):
                     filled_amount = zhubi_v
     elif orderdirection == "SELL":
-        filled_amount = filled_amount
+        if this_bid < next_bid:
+            if isBE(p, next_bid):
+                if isBE(zhubi_p, p):
+                    filled_amount = zhubi_v
+            elif p < this_bid:
+                if isBE(zhubi_p, p):
+                    filled_amount = zhubi_v
+            elif isBE(p, this_bid) and p < next_bid:
+                if isBE(zhubi_p, p):
+                    filled_amount = zhubi_v
+        elif this_bid == next_bid:
+            if isBE(zhubi_p, p):
+                filled_amount = zhubi_v
+        elif this_bid > next_bid:
+            if isBE(p, this_bid):
+                if isBE(zhubi_p, p):
+                    filled_amount = zhubi_v
+            elif p < next_bid:
+                if isBE(zhubi_p, p):
+                    filled_amount = zhubi_v
+            elif isBE(p, next_bid) and p < this_bid:
+                if isBE(zhubi_p, p):
+                    filled_amount = zhubi_v
 
     return filled_amount
 
