@@ -62,26 +62,26 @@ def calc_fill_zhubi_amount(this_tick, next_tick, p, orderdirection, zhubi_p, zhu
     if orderdirection == "BUY":
         if this_ask > next_ask:
             if isBE(p, this_ask):
-                if zhubi_p < p:
+                if zhubi_p <= p:
                     filled_amount = zhubi_v
             elif p < next_ask:
-                if zhubi_p < p:
+                if zhubi_p <= p:
                     filled_amount = zhubi_v
             elif isBE(p, next_ask) and p < this_ask:
-                if zhubi_p < p:
+                if zhubi_p <= p:
                     filled_amount = zhubi_v
         elif this_ask == next_ask:
-            if zhubi_p < p:
+            if zhubi_p <= p:
                 filled_amount = zhubi_v
         elif this_ask < next_ask:
             if isBE(p, next_ask):
-                if zhubi_p < p:
+                if zhubi_p <= p:
                     filled_amount = zhubi_v
             elif p < this_ask:
-                if zhubi_p < p:
+                if zhubi_p <= p:
                     filled_amount = zhubi_v
             elif isBE(p, this_ask) and p < next_ask:
-                if zhubi_p < p:
+                if zhubi_p <= p:
                     filled_amount = zhubi_v
     elif orderdirection == "SELL":
         filled_amount = filled_amount
@@ -126,59 +126,75 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
             orderendtime = pd.to_datetime(row_time)
             break
 
-    print(f"tick_data is {tick_data}")
+    # print(f"tick_data is {tick_data}")
+    if len(tick_data) < 2:
+        print(f"Invalid tick data len: {len(tick_data)}, return False")
+        return False
 
     # filter to end time
     filtered_marketdata = filtered_marketdata[filtered_marketdata['time'] <= orderendtime.__str__()]
 
     # filter without tick data
-    filtered_marketdata = filtered_marketdata[pd.isna(filtered_marketdata["last"])]
+    # filtered_marketdata = filtered_marketdata[pd.isna(filtered_marketdata["last"])]
 
-    tick_data_index = 0
-    this_tick = tick_data[tick_data_index]
-    next_tick = tick_data[tick_data_index + 1]
+    tick_data_len = 0
+    this_tick = tick_data[tick_data_len - 2]
+    next_tick = tick_data[tick_data_len - 1]
     filled_amount += calc_fill_tick_amount(this_tick, next_tick, orderplaceprice, orderdirection)
-    prev_rowtime = ''
-    prev_rowtime_set = False
     if isBE(filled_amount, orderqueuenumber):
         print(f"Filled amount is {filled_amount} bigger and equal than placed amount {orderqueuenumber}")
         return True
+    last_2_tick_time = tick_data[len(tick_data)-2][0]
+    prev_rowtime = ''
+    prev_rowtime_set = False
     for row in filtered_marketdata.itertuples():
+        # print(f"row is: {row}")
         row_time = getattr(row, "time")
         if row_time < orderplacetime.__str__():
             continue
         elif row_time > orderendtime.__str__():
             break
-        # filter repeat zhubi data
+        # filter repeat data
         if prev_rowtime_set and prev_rowtime >= row_time:
             continue
+
         prev_rowtime = row_time
         prev_rowtime_set = True
+        tick_buy_price = tick_buy_volume = tick_sell_price = tick_sell_volume = 0.0
 
-        if row_time > next_tick[0]:
-            if tick_data_index + 1 + 1 > len(tick_data):
-                print("Reach tick data end, break")
-                break
-            tick_data_index += 1
-            this_tick = next_tick
-            next_tick = tick_data[tick_data_index+1]
-            filled_amount += calc_fill_tick_amount(this_tick, next_tick, orderplaceprice, orderdirection)
-            if isBE(filled_amount, orderqueuenumber):
-                print(f"Filled amount is {filled_amount} bigger and equal than placed amount {orderqueuenumber}")
-                return True
-
-        if this_tick[0] <= row_time <= next_tick[0]:
-            row_price = getattr(row, "price")
-            row_amount = getattr(row, "amount")
+        row_price = getattr(row, "price")
+        row_amount = getattr(row, "amount")
+        if row_time >= last_2_tick_time:
+            # skip tick data
+            if pd.isna(getattr(row, "bs")):
+                continue
             filled_amount += calc_fill_zhubi_amount(this_tick, next_tick, orderplaceprice, orderdirection, row_price, row_amount)
+        else:
+            is_tick = False
+            if pd.isna(getattr(row, "bs")):
+                tick_buy_price = getattr(row, "bid_0_p")
+                tick_buy_volume = getattr(row, "bid_0_v")
+                tick_sell_price = getattr(row, "ask_0_p")
+                tick_sell_volume = getattr(row, "ask_0_v")
+                is_tick = True
+            if orderdirection == 'BUY':
+                if is_tick and isBE(orderplaceprice, tick_sell_price):
+                    filled_amount += tick_sell_volume
 
-            if isBE(filled_amount, orderqueuenumber):
-                print(f"Filled amount is {filled_amount} bigger and equal than placed amount {orderqueuenumber}")
-                return True
+                if not is_tick and isBE(orderplaceprice, row_price):
+                    filled_amount += row_amount
 
-    if isBE(filled_amount, orderqueuenumber):
-        print(f"Filled amount is {filled_amount} bigger and equal than placed amount {orderqueuenumber}")
-        return True
+            elif orderdirection == "SELL":
+                if is_tick and isLE(orderplaceprice, tick_buy_price):
+                    filled_amount += tick_buy_volume
+
+                if not is_tick and isLE(orderplaceprice, row_price):
+                    filled_amount += row_amount
+
+        if isBE(filled_amount, orderqueuenumber):
+            print(f"Filled amount is {filled_amount} bigger and equal than placed amount {orderqueuenumber}")
+            return True
+
     print(f"Filled amount is {filled_amount} little than placed amount {orderqueuenumber}")
     return False
 
