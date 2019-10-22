@@ -165,8 +165,8 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
         bid_v = getattr(row, "bid_0_v")
         tick_data.append([row_time, ask_p, ask_v, bid_p, bid_v])
         if row_time >= orderendtime.__str__():
-            # reset orderendtime
-            orderendtime = pd.to_datetime(row_time)
+            # do not reset orderendtime
+            # orderendtime = pd.to_datetime(row_time)
             break
 
     # print(f"tick_data is {tick_data}")
