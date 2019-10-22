@@ -22,7 +22,7 @@ def isBE(first, second):
         return True
     return False
 
-def calc_fill_tick_amount(this_tick, next_tick, p, orderdirection):
+def calc_filled_amount(this_tick, next_tick, p, orderdirection, zhubi_p, zhubi_v, is_tick):
     this_ask = this_tick[1]
     this_ask_v = this_tick[2]
     next_ask = next_tick[1]
@@ -33,6 +33,10 @@ def calc_fill_tick_amount(this_tick, next_tick, p, orderdirection):
     next_bid_v = next_tick[4]
     filled_amount = 0
     if orderdirection == "BUY":
+        if not is_tick:
+            if isLE(zhubi_p, p):
+                filled_amount = zhubi_v
+            return filled_amount
         if this_ask > next_ask:
             if isBE(p, this_ask):
                 filled_amount = next_ask_v + this_ask_v
@@ -42,7 +46,11 @@ def calc_fill_tick_amount(this_tick, next_tick, p, orderdirection):
             elif isBE(p, next_ask) and p < this_ask:
                 filled_amount = next_ask_v
         elif this_ask == next_ask:
-            filled_amount = next_ask_v
+            if isBE(p, this_ask):
+                filled_amount = next_ask_v
+            elif p > this_ask:
+                # do nothing
+                filled_amount = filled_amount
         elif this_ask < next_ask:
             if isBE(p, next_ask):
                 filled_amount = next_ask_v
@@ -53,82 +61,33 @@ def calc_fill_tick_amount(this_tick, next_tick, p, orderdirection):
                 # do nothing
                 filled_amount = filled_amount
     elif orderdirection == "SELL":
-        if this_bid < next_bid:
-            if isBE(p, next_bid):
-                filled_amount = next_bid_v + this_bid_v
-            elif p < this_bid:
-                # do nothing
-                filled_amount = filled_amount
-            elif isBE(p, this_bid) and p < next_bid:
-                filled_amount = next_bid_v
-        elif this_bid == next_bid:
-            filled_amount = next_bid_v
-        elif this_bid > next_bid:
-            if isBE(p, this_bid):
-                filled_amount = next_bid_v
-            elif p < next_bid:
-                filled_amount = filled_amount
-            elif isBE(p, next_bid) and p < this_bid:
-                filled_amount = filled_amount
-
-
-    return filled_amount
-
-def calc_fill_zhubi_amount(this_tick, next_tick, p, orderdirection, zhubi_p, zhubi_v):
-    this_ask = this_tick[1]
-    next_ask = next_tick[1]
-    this_bid = this_tick[3]
-    next_bid = next_tick[3]
-    filled_amount = 0
-    if orderdirection == "BUY":
-        if this_ask > next_ask:
-            if isBE(p, this_ask):
-                if isLE(zhubi_p, p):
-                    filled_amount = zhubi_v
-            elif p < next_ask:
-                if isLE(zhubi_p, p):
-                    filled_amount = zhubi_v
-            elif isBE(p, next_ask) and p < this_ask:
-                if isLE(zhubi_p, p):
-                    filled_amount = zhubi_v
-        elif this_ask == next_ask:
-            if isLE(zhubi_p, p):
-                filled_amount = zhubi_v
-        elif this_ask < next_ask:
-            if isBE(p, next_ask):
-                if isLE(zhubi_p, p):
-                    filled_amount = zhubi_v
-            elif p < this_ask:
-                if isLE(zhubi_p, p):
-                    filled_amount = zhubi_v
-            elif isBE(p, this_ask) and p < next_ask:
-                if isLE(zhubi_p, p):
-                    filled_amount = zhubi_v
-    elif orderdirection == "SELL":
-        if this_bid < next_bid:
-            if isBE(p, next_bid):
-                if isBE(zhubi_p, p):
-                    filled_amount = zhubi_v
-            elif p < this_bid:
-                if isBE(zhubi_p, p):
-                    filled_amount = zhubi_v
-            elif isBE(p, this_bid) and p < next_bid:
-                if isBE(zhubi_p, p):
-                    filled_amount = zhubi_v
-        elif this_bid == next_bid:
+        if not is_tick:
             if isBE(zhubi_p, p):
                 filled_amount = zhubi_v
+            return filled_amount
+        if this_bid < next_bid:
+            if isLE(p, next_bid):
+                filled_amount = next_bid_v + this_bid_v
+            elif p > next_bid:
+                # do nothing
+                filled_amount = filled_amount
+            elif isLE(p, next_bid) and p > this_bid:
+                filled_amount = next_bid_v
+        elif this_bid == next_bid:
+            if isLE(p, next_bid):
+                filled_amount = next_bid_v
+            elif p > next_bid:
+                # do nothing
+                filled_amount = filled_amount
         elif this_bid > next_bid:
-            if isBE(p, this_bid):
-                if isBE(zhubi_p, p):
-                    filled_amount = zhubi_v
-            elif p < next_bid:
-                if isBE(zhubi_p, p):
-                    filled_amount = zhubi_v
-            elif isBE(p, next_bid) and p < this_bid:
-                if isBE(zhubi_p, p):
-                    filled_amount = zhubi_v
-
+            if isLE(p, next_bid):
+                filled_amount = next_bid_v
+            elif p > this_bid:
+                # do nothing
+                filled_amount = filled_amount
+            elif isLE(p, this_bid) and p > next_bid:
+                # do nothing
+                filled_amount = filled_amount
     return filled_amount
 
 
@@ -183,7 +142,7 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
     tick_data_len = 0
     this_tick = tick_data[tick_data_len - 2]
     next_tick = tick_data[tick_data_len - 1]
-    filled_amount += calc_fill_tick_amount(this_tick, next_tick, orderplaceprice, orderdirection)
+    filled_amount += calc_filled_amount(this_tick, next_tick, orderplaceprice, orderdirection, 0.0, 0.0, True)
     if isBE(filled_amount, orderqueuenumber):
         print(f"Filled amount is {filled_amount} bigger and equal than placed amount {orderqueuenumber}")
         return True
@@ -211,7 +170,7 @@ def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprice,orde
             # skip tick data
             if pd.isna(getattr(row, "bs")):
                 continue
-            filled_amount += calc_fill_zhubi_amount(this_tick, next_tick, orderplaceprice, orderdirection, row_price, row_amount)
+            filled_amount += calc_filled_amount(this_tick, next_tick, orderplaceprice, orderdirection, row_price, row_amount, False)
         else:
             is_tick = False
             if pd.isna(getattr(row, "bs")):
