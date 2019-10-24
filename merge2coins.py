@@ -117,7 +117,7 @@ if __name__ == "__main__":
                 for temp in range(df_start_index[index], coin_row_indexes[index] + 1):
                     # df_output = df_output.append(df_coins[index].loc[temp])
                     result_array.append(df_coins[index].loc[temp].values)
-                previous_write_range[index][0] = df_start_index[index]
+                previous_write_range[index][0] = coin_row_indexes[index] #df_start_index[index]
                 previous_write_range[index][1] = coin_row_indexes[index] + 1
                 df_start_index[index] = coin_row_indexes[index] + 1
 
