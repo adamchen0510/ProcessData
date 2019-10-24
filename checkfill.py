@@ -125,7 +125,7 @@ def checkfillornot_single(filtered_tickdata,filtered_marketdata,orderplacetime,o
     filtered_marketdata = filtered_marketdata[filtered_marketdata['time'] <= orderendtime.__str__()]
 
     # filter without tick data
-    # filtered_marketdata = filtered_marketdata[pd.isna(filtered_marketdata["last"])]
+    filtered_marketdata = filtered_marketdata[pd.isna(filtered_marketdata["last"])]
 
     tick_data_len = 0
     this_tick = tick_data[tick_data_len - 2]
@@ -156,18 +156,18 @@ def checkfillornot_single(filtered_tickdata,filtered_marketdata,orderplacetime,o
         row_amount = getattr(row, "amount")
         if row_time >= last_2_tick_time:
             # skip tick data
-            if pd.isna(getattr(row, "bs")):
-                continue
+            # if pd.isna(getattr(row, "bs")):
+            #     continue
             filled_amount += calc_filled_amount(this_tick, next_tick, orderplaceprice, orderdirection, row_price,
                                                 row_amount, False)
         else:
             is_tick = False
-            if pd.isna(getattr(row, "bs")):
-                tick_buy_price = getattr(row, "bid_0_p")
-                tick_buy_volume = getattr(row, "bid_0_v")
-                tick_sell_price = getattr(row, "ask_0_p")
-                tick_sell_volume = getattr(row, "ask_0_v")
-                is_tick = True
+            # if pd.isna(getattr(row, "bs")):
+            #     tick_buy_price = getattr(row, "bid_0_p")
+            #     tick_buy_volume = getattr(row, "bid_0_v")
+            #     tick_sell_price = getattr(row, "ask_0_p")
+            #     tick_sell_volume = getattr(row, "ask_0_v")
+            #     is_tick = True
             if orderdirection == 'BUY':
                 if is_tick and isBE(orderplaceprice, tick_sell_price):
                     filled_amount += tick_sell_volume
