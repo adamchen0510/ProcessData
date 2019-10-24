@@ -219,12 +219,15 @@ if __name__ == "__main__":
         print(f"Usage python checkfill.py $input.csv")
         exit(0)
     marketdata = pd.read_csv(sys.argv[1])
-    orderplacetime = datetime.datetime(2019, 8, 1, 0, 5, tzinfo=datetime.timezone(datetime.timedelta(hours=0)))
+    orderplacetime = datetime.datetime(2019, 8, 1, 0, 9, 2, tzinfo=datetime.timezone(datetime.timedelta(hours=0)))
     orderdirection = 'BUY'
     orderduration = [datetime.timedelta(seconds=600),datetime.timedelta(seconds=1200)]
-    orderplaceprice = [0.00019642, 0.00019642]
-    orderqueuenumber = [5000, 10000]
-    contractname = 'lrc.eth:xtc.binance'
+    # orderplaceprice = [0.00019642, 0.00019642]
+    # orderqueuenumber = [5000, 10000]
+    # contractname = 'lrc.eth:xtc.binance'
+    orderplaceprice = [10000, 8000]
+    orderqueuenumber = [0.1, 0.2]
+    contractname = 'btc.usdt:xtc.binance'
     filtered_marketdata = marketdata[marketdata['contract'] == contractname]
     print("current time: " + str(time.time()))
     tick_data = filtered_marketdata[pd.isna(filtered_marketdata["bs"])]
