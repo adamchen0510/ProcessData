@@ -192,6 +192,9 @@ def checkfillornot_eachtick(marketdata,orderdirection,orderpricedelta,orderdurat
     tick_data = filtered_marketdata[pd.isna(filtered_marketdata["bs"])]
     prev_rowtime = ''
     prev_rowtime_set = False
+    delta_len = len(orderpricedelta)
+    price_delta = orderpricedelta[delta_len - 1]
+    tick_index = 0
     for row in tick_data.itertuples():
         row_time = pd.to_datetime(getattr(row, "time"))
         # filter repeat tick data
@@ -204,9 +207,12 @@ def checkfillornot_eachtick(marketdata,orderdirection,orderpricedelta,orderdurat
         # calc orderplaceprice
         tick_bid = getattr(row, "bid_0_p")
         tick_ask = getattr(row, "ask_0_p")
-        orderplaceprice = (tick_bid + tick_ask)/2 + orderpricedelta
+        if len(orderpricedelta) > tick_index:
+            price_delta = orderpricedelta[tick_index]
+        orderplaceprice = (tick_bid + tick_ask)/2 + price_delta
         filled.append(checkfillornot(filtered_marketdata, tick_data, orderplacetime, orderdirection, orderplaceprice,
                                      orderduration, orderqueuenumber, contractname, 0))
+        tick_index += 1
 
     return filled
 
@@ -221,9 +227,9 @@ if __name__ == "__main__":
     orderduration = datetime.timedelta(seconds=600)
     # orderqueuenumber = 5000
     # contractname = 'lrc.eth:xtc.binance'
-    orderqueuenumber = 200
+    orderqueuenumber = 0.2
     contractname = 'btc.usdt:xtc.binance'
-    orderpricedelta = 0.0001
+    orderpricedelta = [0.0001, 0.0002, 0.0003]
 
     filled = checkfillornot_eachtick(marketdata,orderdirection,orderpricedelta,orderduration,orderqueuenumber,contractname,0)
     print(f"filled value is {filled}")
