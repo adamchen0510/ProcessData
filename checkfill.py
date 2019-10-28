@@ -193,7 +193,7 @@ def checkfillornot_eachtick(marketdata,orderdirection,orderpricedelta,orderdurat
     prev_rowtime = ''
     prev_rowtime_set = False
     delta_len = len(orderpricedelta)
-    price_delta = orderpricedelta[delta_len - 1]
+    price_delta = 0.0
     tick_index = 0
     for row in tick_data.itertuples():
         row_time = pd.to_datetime(getattr(row, "time"))
@@ -207,7 +207,7 @@ def checkfillornot_eachtick(marketdata,orderdirection,orderpricedelta,orderdurat
         # calc orderplaceprice
         tick_bid = getattr(row, "bid_0_p")
         tick_ask = getattr(row, "ask_0_p")
-        if len(orderpricedelta) > tick_index:
+        if delta_len > tick_index:
             price_delta = orderpricedelta[tick_index]
         orderplaceprice = (tick_bid + tick_ask)/2 + price_delta
         filled.append(checkfillornot(filtered_marketdata, tick_data, orderplacetime, orderdirection, orderplaceprice,
