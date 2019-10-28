@@ -204,7 +204,7 @@ def checkfillornot_eachtick(marketdata,orderdirection,orderpricedelta,orderdurat
         # calc orderplaceprice
         tick_bid = getattr(row, "bid_0_p")
         tick_ask = getattr(row, "ask_0_p")
-        orderplaceprice = (tick_bid + tick_ask) + orderpricedelta
+        orderplaceprice = (tick_bid + tick_ask)/2 + orderpricedelta
         filled.append(checkfillornot(filtered_marketdata, tick_data, orderplacetime, orderdirection, orderplaceprice,
                                      orderduration, orderqueuenumber, contractname, 0))
 
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     orderduration = datetime.timedelta(seconds=600)
     # orderqueuenumber = 5000
     # contractname = 'lrc.eth:xtc.binance'
-    orderqueuenumber = 0.1
+    orderqueuenumber = 200
     contractname = 'btc.usdt:xtc.binance'
     orderpricedelta = 0.0001
 
