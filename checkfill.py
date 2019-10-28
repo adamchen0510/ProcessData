@@ -155,19 +155,10 @@ def checkfillornot_single(filtered_tickdata,filtered_marketdata,orderplacetime,o
         row_price = getattr(row, "price")
         row_amount = getattr(row, "amount")
         if row_time >= last_2_tick_time:
-            # skip tick data
-            # if pd.isna(getattr(row, "bs")):
-            #     continue
             filled_amount += calc_filled_amount(this_tick, next_tick, orderplaceprice, orderdirection, row_price,
                                                 row_amount, False)
         else:
             is_tick = False
-            # if pd.isna(getattr(row, "bs")):
-            #     tick_buy_price = getattr(row, "bid_0_p")
-            #     tick_buy_volume = getattr(row, "bid_0_v")
-            #     tick_sell_price = getattr(row, "ask_0_p")
-            #     tick_sell_volume = getattr(row, "ask_0_v")
-            #     is_tick = True
             if orderdirection == 'BUY':
                 if is_tick and isBE(orderplaceprice, tick_sell_price):
                     filled_amount += tick_sell_volume
@@ -189,30 +180,35 @@ def checkfillornot_single(filtered_tickdata,filtered_marketdata,orderplacetime,o
     print(f"Filled amount is {filled_amount} little than placed amount {orderqueuenumber}")
     return False
 
-def checkfillornot(marketdata,orderplacetime,orderdirection,orderplaceprices,orderdurations,orderqueuenumbers,contractname,orderunit):
-    filled_status = []
-    filtered_marketdata = marketdata
-    # duration_row_num = marketdata.shape[0]#5000
-    # abc = marketdata.loc[marketdata['time'] == orderplacetime.__str__()]
-    # start_row_num = abc.index.values[0]
-    # end_row_num = start_row_num + duration_row_num
-    # if end_row_num >= marketdata.shape[0]:
-    #     end_row_num = marketdata.shape[0]
-    # filtered_marketdata = marketdata[start_row_num:]
-    # filter contractName
-    # filtered_marketdata = filtered_marketdata[filtered_marketdata['contract'] == contractname]
+def checkfillornot(marketdata,filtered_tickdata,orderplacetime,orderdirection,orderplaceprices,orderdurations,orderqueuenumbers,contractname,orderunit):
+    return checkfillornot_single(filtered_tickdata, marketdata, orderplacetime, orderdirection,
+                                               orderplaceprices,
+                                               orderplacetime + orderdurations, orderqueuenumbers, contractname)
 
-    # filter from start time
-    # filtered_marketdata = filtered_marketdata[filtered_marketdata['time'] >= orderplacetime.__str__()]
 
-    # filter tick data
-    filtered_tickdata = filtered_marketdata[pd.isna(filtered_marketdata["bs"])]
-    for i in range(0, len(orderplaceprices)):
-        filled_status.append(checkfillornot_single(filtered_tickdata,filtered_marketdata,orderplacetime,orderdirection,orderplaceprices[i],
-                              orderplacetime+orderdurations[i],orderqueuenumbers[i],contractname))
+def checkfillornot_eachtick(marketdata,orderdirection,orderpricedelta,orderduration,orderqueuenumber,contractname,orderunit):
+    filled = []
+    filtered_marketdata = marketdata[marketdata['contract'] == contractname].reset_index()
+    tick_data = filtered_marketdata[pd.isna(filtered_marketdata["bs"])]
+    prev_rowtime = ''
+    prev_rowtime_set = False
+    for row in tick_data.itertuples():
+        row_time = pd.to_datetime(getattr(row, "time"))
+        # filter repeat tick data
+        if prev_rowtime_set and prev_rowtime >= row_time:
+            continue
+        prev_rowtime = row_time
+        prev_rowtime_set = True
+        orderplacetime = row_time
 
-    return filled_status
+        # calc orderplaceprice
+        tick_bid = getattr(row, "bid_0_p")
+        tick_ask = getattr(row, "ask_0_p")
+        orderplaceprice = (tick_bid + tick_ask) + orderpricedelta
+        filled.append(checkfillornot(filtered_marketdata, tick_data, orderplacetime, orderdirection, orderplaceprice,
+                                     orderduration, orderqueuenumber, contractname, 0))
 
+    return filled
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -222,43 +218,13 @@ if __name__ == "__main__":
     # marketdata = pd.read_csv("binance.csv")
     orderplacetime = datetime.datetime(2019, 8, 1, 0, 9, 2, tzinfo=datetime.timezone(datetime.timedelta(hours=0)))
     orderdirection = 'BUY'
-    orderduration = [datetime.timedelta(seconds=600),datetime.timedelta(seconds=1200)]
-    # orderplaceprice = [0.00019642, 0.00019642]
-    # orderqueuenumber = [5000, 10000]
+    orderduration = datetime.timedelta(seconds=600)
+    # orderqueuenumber = 5000
     # contractname = 'lrc.eth:xtc.binance'
-    orderplaceprice = [10000, 8000]
-    orderqueuenumber = [0.1, 0.2]
+    orderqueuenumber = 0.1
     contractname = 'btc.usdt:xtc.binance'
-    filtered_marketdata = marketdata[marketdata['contract'] == contractname].reset_index()
-    tick_data = filtered_marketdata[pd.isna(filtered_marketdata["bs"])]
-    index = 0
-    row_delta = 100000
-    time_cost = 0.0
-    prev_rowtime = ''
-    prev_rowtime_set = False
-    print("current time: " + str(time.time()))
-    for row in tick_data.itertuples():
-        row_time = pd.to_datetime(getattr(row, "time"))
-        # print(f"row is {row}")
-        # filter repeat tick data
-        if prev_rowtime_set and prev_rowtime >= row_time:
-            continue
-        prev_rowtime = row_time
-        prev_rowtime_set = True
-        orderplacetime = row_time
-        start_row = filtered_marketdata.loc[filtered_marketdata['time'] == orderplacetime.__str__()]
-        # print(f"start row is : {start_row}")
-        start_row_num = start_row.index.values[0]
-        end_row_num = start_row_num + row_delta
-        if end_row_num > filtered_marketdata.shape[0]:
-            end_row_num = filtered_marketdata.shape[0]
-        temp_marketdata = filtered_marketdata[start_row_num:]#filtered_marketdata[start_row_num:end_row_num]
-        start_fill_time = time.time()
-        filled = checkfillornot(temp_marketdata, orderplacetime, orderdirection, orderplaceprice, orderduration, orderqueuenumber, contractname, 0)
-        time_cost += time.time() - start_fill_time
-        print(f"Filled value is {filled}")
-        print(f"progress: {start_row_num/filtered_marketdata.shape[0]}")
-        index += 1
-    print(f"tick num is {index}")
-    print(f"time cost is {time_cost}")
-    print("current time: " + str(time.time()))
+    orderpricedelta = 0.0001
+
+    filled = checkfillornot_eachtick(marketdata,orderdirection,orderpricedelta,orderduration,orderqueuenumber,contractname,0)
+    print(f"filled value is {filled}")
+
