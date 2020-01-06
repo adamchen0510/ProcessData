@@ -45,6 +45,10 @@ if __name__ == "__main__":
                 bid_price = getattr(row, "bid_0_p")
                 ask_volume = getattr(row, "ask_0_v")
                 bid_volume = getattr(row, "bid_0_v")
+                if ask_price == 0.0 or bid_price == 0.0 or ask_volume == 0.0 or bid_volume == 0.0:
+                    print(f"Invalid price/volume {ask_price} {ask_volume} {bid_price} {bid_volume}")
+                    df.drop(index=[row[0], row[0]], inplace=True)
+                    continue
 
                 # check price and volume
                 if ask_price <= 0.0 or \

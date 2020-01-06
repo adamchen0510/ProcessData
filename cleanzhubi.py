@@ -34,8 +34,8 @@ if __name__ == "__main__":
                     df.drop(index=[row[0], row[0]], inplace=True)
                     continue
 
-                price = getattr(row, "price")
-                volume = getattr(row, "amount")
+                price = float(getattr(row, "price"))
+                volume = float(getattr(row, "amount"))
 
                 # check price and volume
                 if price <= 0.0 or volume <= 0.0:

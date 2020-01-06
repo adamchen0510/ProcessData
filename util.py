@@ -1,12 +1,12 @@
 import os
 import gzip
 
-start_time = "2019-08-01"
-end_time = "2019-08-01"
+start_time = "2020-01-01"
+end_time = "2020-12-30"
 
 
 def is_in_time(path):
-    time_path = path.find("2019-08")
+    time_path = path.find("2020")
     if start_time <= path[time_path:time_path+10] <= end_time:
         return True
     else:
